@@ -27,12 +27,14 @@
     {
       "type": "cni-nftables-portmap",
       "capabilities": {
-        "portMappings": true
-      }
+        "portMappings": true,
+      },
     },
     {
       "type": "cni-nftables-firewall",
-      "forward_chain_name": "forward"
+      "forward_chain_name": "forward",
+      "outbound_address4" : "1.1.1.1",
+      "outbound_address6" : "feed::c0fe"
     }
   ]
 }
