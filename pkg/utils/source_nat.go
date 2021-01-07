@@ -15,9 +15,9 @@ func addPostRoutingSourceNatRule(opts map[string]interface{}) error {
 	chainName := opts["chain"].(string)
 	bridgeIntfName := opts["bridge_interface"].(string)
 	addr := opts["ip_address"].(*current.IPConfig)
-	tgtAddr := opts["tgt_address"].(net.IPNet)
+	outboundAddress := opts["outbound_address"].(net.IPNet)
 
-	if v != "4" && v != "6"{
+	if v != "4" && v != "6" {
 		return nil
 	}
 
@@ -28,9 +28,9 @@ func addPostRoutingSourceNatRule(opts map[string]interface{}) error {
 
 	var Family nftables.TableFamily
 	if v == "4" {
-		Family = nftables.TableFamilyIPv4;
-	}else{
-		Family = nftables.TableFamilyIPv6;
+		Family = nftables.TableFamilyIPv4
+	} else {
+		Family = nftables.TableFamilyIPv6
 	}
 
 	tb := &nftables.Table{
@@ -71,7 +71,7 @@ func addPostRoutingSourceNatRule(opts map[string]interface{}) error {
 			Register: 1,
 			Data:     addr.Address.IP.To4(),
 		})
-	}else{
+	} else {
 		r.Exprs = append(r.Exprs, &expr.Payload{
 			DestRegister: 1,
 			Base:         expr.PayloadBaseNetworkHeader,
@@ -88,9 +88,9 @@ func addPostRoutingSourceNatRule(opts map[string]interface{}) error {
 	r.Exprs = append(r.Exprs, &expr.Counter{})
 
 	// nat or snat
-	if (tgtAddr.IP == nil){
+	if outboundAddress.IP == nil {
 		r.Exprs = append(r.Exprs, &expr.Masq{})
-	}else{
+	} else {
 		if v == "4" {
 			r.Exprs = append(r.Exprs, &expr.Payload{
 				DestRegister: 1,
@@ -98,34 +98,34 @@ func addPostRoutingSourceNatRule(opts map[string]interface{}) error {
 				Offset:       2, // TODO
 				Len:          2, // TODO
 			})
-	
+
 			r.Exprs = append(r.Exprs, &expr.Immediate{
 				Register: 1,
-				Data:     tgtAddr.IP.To4(),
+				Data:     outboundAddress.IP.To4(),
 			})
-	
+
 			r.Exprs = append(r.Exprs, &expr.NAT{
-				Type:        expr.NATTypeSourceNAT,
-				Family:      unix.NFPROTO_IPV4,
-				RegAddrMin:  1,
+				Type:       expr.NATTypeSourceNAT,
+				Family:     unix.NFPROTO_IPV4,
+				RegAddrMin: 1,
 			})
-		}else {
+		} else {
 			r.Exprs = append(r.Exprs, &expr.Payload{
 				DestRegister: 1,
 				Base:         expr.PayloadBaseTransportHeader,
 				Offset:       2, // TODO
 				Len:          2, // TODO
 			})
-	
+
 			r.Exprs = append(r.Exprs, &expr.Immediate{
 				Register: 1,
-				Data:     tgtAddr.IP.To16(),
+				Data:     outboundAddress.IP.To16(),
 			})
-	
+
 			r.Exprs = append(r.Exprs, &expr.NAT{
-				Type:        expr.NATTypeSourceNAT,
-				Family:      unix.NFPROTO_IPV6,
-				RegAddrMin:  1,
+				Type:       expr.NATTypeSourceNAT,
+				Family:     unix.NFPROTO_IPV6,
+				RegAddrMin: 1,
 			})
 		}
 	}

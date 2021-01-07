@@ -6,7 +6,7 @@ import (
 	"github.com/google/nftables/binaryutil"
 	"github.com/google/nftables/expr"
 	"golang.org/x/sys/unix"
-
+	"strings"
 	"net"
 )
 
@@ -16,8 +16,7 @@ func AddDestinationNatRules(opts map[string]interface{}) error {
 	tableName := opts["table"].(string)
 	chainName := opts["chain"].(string)
 	bridgeIntfName := opts["bridge_interface"].(string)
-	saddr := opts["saddr"].(net.IPNet)
-	daddr := opts["daddr"].(net.IPNet)
+	daddr := opts["ip_address"].(net.IPNet)
 	pm := opts["port_mapping"].(MappingEntry)
 
 	/*
@@ -64,8 +63,17 @@ func AddDestinationNatRules(opts map[string]interface{}) error {
 	})
 
 	// match saddr
-	if saddr.IP != nil {
-		if v=="4" {
+	if len(pm.HostIP) > 0 {
+		saddr := net.ParseIP(pm.HostIP)
+		if v == "4" && saddr.To4() == nil{
+			return nil;
+		}
+		//To16 returns ipv4 as ipv6 so it can't be used
+		if v == "6" && !strings.Contains(pm.HostIP, ":"){
+			return nil;
+		}
+
+		if v == "4" {
 			r.Exprs = append(r.Exprs, &expr.Payload{
 				DestRegister: 1,
 				Base:         expr.PayloadBaseNetworkHeader,
@@ -75,7 +83,7 @@ func AddDestinationNatRules(opts map[string]interface{}) error {
 			r.Exprs = append(r.Exprs, &expr.Cmp{
 				Op:       expr.CmpOpEq,
 				Register: 1,
-				Data:     saddr.IP.To4(),
+				Data:     saddr.To4(),
 			})
 		}else{
 			r.Exprs = append(r.Exprs, &expr.Payload{
@@ -87,7 +95,7 @@ func AddDestinationNatRules(opts map[string]interface{}) error {
 			r.Exprs = append(r.Exprs, &expr.Cmp{
 				Op:       expr.CmpOpEq,
 				Register: 1,
-				Data:     saddr.IP.To16(),
+				Data:     saddr.To16(),
 			})
 		}
 	}

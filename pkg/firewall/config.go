@@ -3,7 +3,7 @@ package firewall
 import (
 	"encoding/json"
 	"fmt"
-
+	"log"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/040"
 	"github.com/containernetworking/cni/pkg/version"
@@ -17,12 +17,13 @@ type Config struct {
 	ForwardFilterChainName  string `json:"forward_chain_name"`
 	NatTableName            string `json:"nat_table_name"`
 	PostRoutingNatChainName string `json:"postrouting_nat_chain_name"`
-	SnatTo4 				string `json:"snatTo4"`
-	SnatTo6 				string `json:"snatTo6"`
+	OutboundAddress4        string `json:"outbound_address4"`
+	OutboundAddress6        string `json:"outbound_address6"`
 }
 
 func parseConfigFromBytes(data []byte) (*Config, *current.Result, error) {
 	conf := &Config{}
+
 	if err := json.Unmarshal(data, conf); err != nil {
 		return nil, nil, fmt.Errorf("failed to load conf: %v", err)
 	}
@@ -56,7 +57,6 @@ func parseConfigFromBytes(data []byte) (*Config, *current.Result, error) {
 		// return early if there was no previous result, which is allowed for DEL calls
 		return conf, &current.Result{}, nil
 	}
-
 	// Parse previous result.
 	var result *current.Result
 	var err error
@@ -68,6 +68,7 @@ func parseConfigFromBytes(data []byte) (*Config, *current.Result, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not convert result to current version: %v", err)
 	}
+	log.Printf("\n\nfirewall:\n\nconf = %v", conf)
 
 	return conf, result, nil
 }

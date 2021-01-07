@@ -5,7 +5,7 @@ import (
 	current "github.com/containernetworking/cni/pkg/types/040"
 	"github.com/containernetworking/plugins/pkg/ns"
 	"github.com/containernetworking/plugins/pkg/testutils"
-	"github.com/laurentiu/cni-plugins/pkg/utils"
+	"github.com/laurentiuro/cni-plugins/pkg/utils"
 	"github.com/vishvananda/netlink"
 	"path"
 	"testing"

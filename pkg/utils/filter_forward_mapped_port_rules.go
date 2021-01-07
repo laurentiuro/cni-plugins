@@ -17,8 +17,7 @@ func AddFilterForwardMappedPortRules(opts map[string]interface{}) error {
 	tableName := opts["table"].(string)
 	chainName := opts["chain"].(string)
 	bridgeIntfName := opts["bridge_interface"].(string)
-	// saddr := opts["saddr"].(net.IPNet)
-	daddr := opts["daddr"].(net.IPNet)
+	containerAddress := opts["ip_address"].(net.IPNet)
 	pm := opts["port_mapping"].(MappingEntry)
 
 	if err := isSupportedIPVersion(v); err != nil {
@@ -79,7 +78,7 @@ func AddFilterForwardMappedPortRules(opts map[string]interface{}) error {
 		r.Exprs = append(r.Exprs, &expr.Cmp{
 			Op:       expr.CmpOpEq,
 			Register: 1,
-			Data:     daddr.IP.To4(),
+			Data:     containerAddress.IP.To4(),
 		})
 	} else {
 		r.Exprs = append(r.Exprs, &expr.Payload{
@@ -91,7 +90,7 @@ func AddFilterForwardMappedPortRules(opts map[string]interface{}) error {
 		r.Exprs = append(r.Exprs, &expr.Cmp{
 			Op:       expr.CmpOpEq,
 			Register: 1,
-			Data:     daddr.IP.To16(),
+			Data:     containerAddress.IP.To16(),
 		})
 	}
 
@@ -161,7 +160,7 @@ func RemoveFilterForwardMappedPortRules(opts map[string]interface{}) error {
 	tableName := opts["table"].(string)
 	chainName := opts["chain"].(string)
 	bridgeIntfName := opts["bridge_interface"].(string)
-//	saddr := opts["saddr"].(net.IPNet)
+	//	saddr := opts["saddr"].(net.IPNet)
 	daddr := opts["daddr"].(net.IPNet)
 	// pm := opts["port_mapping"].(MappingEntry)
 

@@ -22,8 +22,8 @@ type Plugin struct {
 	forwardFilterChainName  string
 	natTableName            string
 	postRoutingNatChainName string
-	snatTo4					string
-	snatTo6					string
+	outboundAddress4        string
+	outboundAddress6        string
 	interfaceChain          []string
 	targetInterfaces        map[string]*Interface
 	targetIPVersions        map[string]bool
@@ -39,8 +39,8 @@ func NewPlugin(conf *Config) *Plugin {
 		forwardFilterChainName:  conf.ForwardFilterChainName,
 		natTableName:            conf.NatTableName,
 		postRoutingNatChainName: conf.PostRoutingNatChainName,
-		snatTo4:				 conf.SnatTo4,
-		snatTo6:				 conf.SnatTo6,
+		outboundAddress4:        conf.OutboundAddress4,
+		outboundAddress6:        conf.OutboundAddress6,
 		targetIPVersions:        make(map[string]bool),
 		interfaceChain:          []string{},
 	}
@@ -212,14 +212,14 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 				)
 			}
 
-			var tgtAddr net.IPNet
+			var outboundAddress net.IPNet
 			if addr.Version == "4" {
-				if len(conf.SnatTo4) > 0{
-					tgtAddr.IP = net.ParseIP(conf.SnatTo4)
+				if len(p.outboundAddress4) > 0 {
+					outboundAddress.IP = net.ParseIP(p.outboundAddress4)
 				}
 			} else {
-				if len(conf.SnatTo6) > 0{
-					tgtAddr.IP = net.ParseIP(conf.SnatTo6)
+				if len(p.outboundAddress6) > 0 {
+					outboundAddress.IP = net.ParseIP(p.outboundAddress6)
 				}
 			}
 
@@ -230,7 +230,7 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 					"chain":            chainName,
 					"bridge_interface": bridgeIntfName,
 					"ip_address":       addr,
-					"tgt_address":      tgtAddr,
+					"outbound_address": outboundAddress,
 				},
 			); err != nil {
 				return fmt.Errorf(
