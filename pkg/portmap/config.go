@@ -39,8 +39,6 @@ type Config struct {
 	PreRoutingRawChainName  string `json:"prerouting_raw_chain_name"`
 	FilterTableName         string `json:"filter_table_name"`
 	ForwardFilterChainName  string `json:"forward_filter_chain_name"`
-	SourceIP4 				string `json:"sourceIP4"`
-	SourceIP6 				string `json:"sourceIP6"`
 }
 
 // DefaultMarkBit is the default mark bit to signal that
