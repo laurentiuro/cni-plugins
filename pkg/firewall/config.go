@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/cni/pkg/types/current"
+	current "github.com/containernetworking/cni/pkg/types/040"
 	"github.com/containernetworking/cni/pkg/version"
 )
 
@@ -17,6 +17,8 @@ type Config struct {
 	ForwardFilterChainName  string `json:"forward_chain_name"`
 	NatTableName            string `json:"nat_table_name"`
 	PostRoutingNatChainName string `json:"postrouting_nat_chain_name"`
+	SnatTo4 				string `json:"snatTo4"`
+	SnatTo6 				string `json:"snatTo6"`
 }
 
 func parseConfigFromBytes(data []byte) (*Config, *current.Result, error) {

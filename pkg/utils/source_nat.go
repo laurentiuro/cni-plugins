@@ -2,10 +2,11 @@ package utils
 
 import (
 	"fmt"
-	"github.com/containernetworking/cni/pkg/types/current"
+	current "github.com/containernetworking/cni/pkg/types/040"
 	"github.com/google/nftables"
 	"github.com/google/nftables/expr"
-	//"net"
+	"golang.org/x/sys/unix"
+	"net"
 )
 
 func addPostRoutingSourceNatRule(opts map[string]interface{}) error {
@@ -14,18 +15,27 @@ func addPostRoutingSourceNatRule(opts map[string]interface{}) error {
 	chainName := opts["chain"].(string)
 	bridgeIntfName := opts["bridge_interface"].(string)
 	addr := opts["ip_address"].(*current.IPConfig)
+	tgtAddr := opts["tgt_address"].(net.IPNet)
 
-	if v != "4" {
+	if v != "4" && v != "6"{
 		return nil
 	}
+
 	conn, err := initNftConn()
 	if err != nil {
 		return err
 	}
 
+	var Family nftables.TableFamily
+	if v == "4" {
+		Family = nftables.TableFamilyIPv4;
+	}else{
+		Family = nftables.TableFamilyIPv6;
+	}
+
 	tb := &nftables.Table{
 		Name:   tableName,
-		Family: nftables.TableFamilyIPv4,
+		Family: Family,
 	}
 
 	ch := &nftables.Chain{
@@ -49,22 +59,76 @@ func addPostRoutingSourceNatRule(opts map[string]interface{}) error {
 		Data:     EncodeInterfaceName(bridgeIntfName),
 	})
 
-	// payload load 4b @ network header + 12 => reg 1
-	r.Exprs = append(r.Exprs, &expr.Payload{
-		DestRegister: 1,
-		Base:         expr.PayloadBaseNetworkHeader,
-		Offset:       12,
-		Len:          4,
-	})
-	// cmp eq reg 1 0x0245a8c0
-	r.Exprs = append(r.Exprs, &expr.Cmp{
-		Op:       expr.CmpOpEq,
-		Register: 1,
-		Data:     addr.Address.IP.To4(),
-	})
+	if v == "4" {
+		r.Exprs = append(r.Exprs, &expr.Payload{
+			DestRegister: 1,
+			Base:         expr.PayloadBaseNetworkHeader,
+			Offset:       12,
+			Len:          4,
+		})
+		r.Exprs = append(r.Exprs, &expr.Cmp{
+			Op:       expr.CmpOpEq,
+			Register: 1,
+			Data:     addr.Address.IP.To4(),
+		})
+	}else{
+		r.Exprs = append(r.Exprs, &expr.Payload{
+			DestRegister: 1,
+			Base:         expr.PayloadBaseNetworkHeader,
+			Offset:       8,
+			Len:          16,
+		})
+		r.Exprs = append(r.Exprs, &expr.Cmp{
+			Op:       expr.CmpOpEq,
+			Register: 1,
+			Data:     addr.Address.IP.To16(),
+		})
+	}
 
 	r.Exprs = append(r.Exprs, &expr.Counter{})
-	r.Exprs = append(r.Exprs, &expr.Masq{})
+
+	// nat or snat
+	if (tgtAddr.IP == nil){
+		r.Exprs = append(r.Exprs, &expr.Masq{})
+	}else{
+		if v == "4" {
+			r.Exprs = append(r.Exprs, &expr.Payload{
+				DestRegister: 1,
+				Base:         expr.PayloadBaseTransportHeader,
+				Offset:       2, // TODO
+				Len:          2, // TODO
+			})
+	
+			r.Exprs = append(r.Exprs, &expr.Immediate{
+				Register: 1,
+				Data:     tgtAddr.IP.To4(),
+			})
+	
+			r.Exprs = append(r.Exprs, &expr.NAT{
+				Type:        expr.NATTypeSourceNAT,
+				Family:      unix.NFPROTO_IPV4,
+				RegAddrMin:  1,
+			})
+		}else {
+			r.Exprs = append(r.Exprs, &expr.Payload{
+				DestRegister: 1,
+				Base:         expr.PayloadBaseTransportHeader,
+				Offset:       2, // TODO
+				Len:          2, // TODO
+			})
+	
+			r.Exprs = append(r.Exprs, &expr.Immediate{
+				Register: 1,
+				Data:     tgtAddr.IP.To16(),
+			})
+	
+			r.Exprs = append(r.Exprs, &expr.NAT{
+				Type:        expr.NATTypeSourceNAT,
+				Family:      unix.NFPROTO_IPV6,
+				RegAddrMin:  1,
+			})
+		}
+	}
 
 	conn.AddRule(r)
 	if err := conn.Flush(); err != nil {

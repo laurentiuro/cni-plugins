@@ -16,7 +16,8 @@ func AddDestinationNatRules(opts map[string]interface{}) error {
 	tableName := opts["table"].(string)
 	chainName := opts["chain"].(string)
 	bridgeIntfName := opts["bridge_interface"].(string)
-	addr := opts["ip_address"].(net.IPNet)
+	saddr := opts["saddr"].(net.IPNet)
+	daddr := opts["daddr"].(net.IPNet)
 	pm := opts["port_mapping"].(MappingEntry)
 
 	/*
@@ -62,8 +63,36 @@ func AddDestinationNatRules(opts map[string]interface{}) error {
 		Data:     EncodeInterfaceName(bridgeIntfName),
 	})
 
-	// match port
+	// match saddr
+	if saddr.IP != nil {
+		if v=="4" {
+			r.Exprs = append(r.Exprs, &expr.Payload{
+				DestRegister: 1,
+				Base:         expr.PayloadBaseNetworkHeader,
+				Offset:       16,
+				Len:          4,
+			})
+			r.Exprs = append(r.Exprs, &expr.Cmp{
+				Op:       expr.CmpOpEq,
+				Register: 1,
+				Data:     saddr.IP.To4(),
+			})
+		}else{
+			r.Exprs = append(r.Exprs, &expr.Payload{
+				DestRegister: 1,
+				Base:         expr.PayloadBaseNetworkHeader,
+				Offset:       24,
+				Len:          16,
+			})
+			r.Exprs = append(r.Exprs, &expr.Cmp{
+				Op:       expr.CmpOpEq,
+				Register: 1,
+				Data:     saddr.IP.To16(),
+			})
+		}
+	}
 
+	// match port
 	r.Exprs = append(r.Exprs, &expr.Meta{
 		Key:      expr.MetaKeyL4PROTO,
 		Register: 1,
@@ -104,12 +133,12 @@ func AddDestinationNatRules(opts map[string]interface{}) error {
 	if v == "4" {
 		r.Exprs = append(r.Exprs, &expr.Immediate{
 			Register: 1,
-			Data:     addr.IP.To4(),
+			Data:     daddr.IP.To4(),
 		})
 	} else {
 		r.Exprs = append(r.Exprs, &expr.Immediate{
 			Register: 1,
-			Data:     addr.IP.To16(),
+			Data:     daddr.IP.To16(),
 		})
 	}
 

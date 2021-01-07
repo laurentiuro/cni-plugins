@@ -2,8 +2,9 @@ package firewall
 
 import (
 	"fmt"
-	"github.com/containernetworking/cni/pkg/types/current"
-	"github.com/greenpau/cni-plugins/pkg/utils"
+	current "github.com/containernetworking/cni/pkg/types/040"
+	"github.com/laurentiuro/cni-plugins/pkg/utils"
+	"net"
 )
 
 // Interface represents a collection of addresses
@@ -21,6 +22,8 @@ type Plugin struct {
 	forwardFilterChainName  string
 	natTableName            string
 	postRoutingNatChainName string
+	snatTo4					string
+	snatTo6					string
 	interfaceChain          []string
 	targetInterfaces        map[string]*Interface
 	targetIPVersions        map[string]bool
@@ -36,6 +39,8 @@ func NewPlugin(conf *Config) *Plugin {
 		forwardFilterChainName:  conf.ForwardFilterChainName,
 		natTableName:            conf.NatTableName,
 		postRoutingNatChainName: conf.PostRoutingNatChainName,
+		snatTo4:				 conf.SnatTo4,
+		snatTo6:				 conf.SnatTo6,
 		targetIPVersions:        make(map[string]bool),
 		interfaceChain:          []string{},
 	}
@@ -124,6 +129,7 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 
 	for _, targetInterface := range p.targetInterfaces {
 		for _, addr := range targetInterface.addrs {
+
 			chainName := utils.GetChainName("ffw", conf.ContainerID)
 			exists, err := utils.IsChainExists(addr.Version, p.filterTableName, chainName)
 			if err != nil {
@@ -206,6 +212,17 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 				)
 			}
 
+			var tgtAddr net.IPNet
+			if addr.Version == "4" {
+				if len(conf.SnatTo4) > 0{
+					tgtAddr.IP = net.ParseIP(conf.SnatTo4)
+				}
+			} else {
+				if len(conf.SnatTo6) > 0{
+					tgtAddr.IP = net.ParseIP(conf.SnatTo6)
+				}
+			}
+
 			if err := utils.AddPostRoutingRules(
 				map[string]interface{}{
 					"version":          addr.Version,
@@ -213,6 +230,7 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 					"chain":            chainName,
 					"bridge_interface": bridgeIntfName,
 					"ip_address":       addr,
+					"tgt_address":      tgtAddr,
 				},
 			); err != nil {
 				return fmt.Errorf(

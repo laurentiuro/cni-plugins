@@ -17,7 +17,8 @@ func AddFilterForwardMappedPortRules(opts map[string]interface{}) error {
 	tableName := opts["table"].(string)
 	chainName := opts["chain"].(string)
 	bridgeIntfName := opts["bridge_interface"].(string)
-	addr := opts["ip_address"].(net.IPNet)
+	// saddr := opts["saddr"].(net.IPNet)
+	daddr := opts["daddr"].(net.IPNet)
 	pm := opts["port_mapping"].(MappingEntry)
 
 	if err := isSupportedIPVersion(v); err != nil {
@@ -78,7 +79,7 @@ func AddFilterForwardMappedPortRules(opts map[string]interface{}) error {
 		r.Exprs = append(r.Exprs, &expr.Cmp{
 			Op:       expr.CmpOpEq,
 			Register: 1,
-			Data:     addr.IP.To4(),
+			Data:     daddr.IP.To4(),
 		})
 	} else {
 		r.Exprs = append(r.Exprs, &expr.Payload{
@@ -90,7 +91,7 @@ func AddFilterForwardMappedPortRules(opts map[string]interface{}) error {
 		r.Exprs = append(r.Exprs, &expr.Cmp{
 			Op:       expr.CmpOpEq,
 			Register: 1,
-			Data:     addr.IP.To16(),
+			Data:     daddr.IP.To16(),
 		})
 	}
 
@@ -160,7 +161,8 @@ func RemoveFilterForwardMappedPortRules(opts map[string]interface{}) error {
 	tableName := opts["table"].(string)
 	chainName := opts["chain"].(string)
 	bridgeIntfName := opts["bridge_interface"].(string)
-	addr := opts["ip_address"].(net.IPNet)
+//	saddr := opts["saddr"].(net.IPNet)
+	daddr := opts["daddr"].(net.IPNet)
 	// pm := opts["port_mapping"].(MappingEntry)
 
 	if err := isSupportedIPVersion(v); err != nil {
@@ -227,7 +229,7 @@ func RemoveFilterForwardMappedPortRules(opts map[string]interface{}) error {
 		if v == "6" && len(rr4.Data) != 16 {
 			continue
 		}
-		if net.IP(rr4.Data).String() != addr.IP.String() {
+		if net.IP(rr4.Data).String() != daddr.IP.String() {
 			continue
 		}
 

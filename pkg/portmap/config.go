@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/containernetworking/cni/pkg/types"
-	"github.com/containernetworking/cni/pkg/types/current"
+	current "github.com/containernetworking/cni/pkg/types/040"
 	"github.com/containernetworking/cni/pkg/version"
-	"github.com/greenpau/cni-plugins/pkg/utils"
+	"github.com/laurentiuro/cni-plugins/pkg/utils"
 
 	"net"
 )
@@ -38,6 +38,8 @@ type Config struct {
 	PreRoutingRawChainName  string `json:"prerouting_raw_chain_name"`
 	FilterTableName         string `json:"filter_table_name"`
 	ForwardFilterChainName  string `json:"forward_filter_chain_name"`
+	SourceIP4 				string `json:"sourceIP4"`
+	SourceIP6 				string `json:"sourceIP6"`
 }
 
 // DefaultMarkBit is the default mark bit to signal that

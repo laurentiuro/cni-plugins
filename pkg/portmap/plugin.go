@@ -2,8 +2,8 @@ package portmap
 
 import (
 	"fmt"
-	"github.com/containernetworking/cni/pkg/types/current"
-	"github.com/greenpau/cni-plugins/pkg/utils"
+	current "github.com/containernetworking/cni/pkg/types/040"
+	"github.com/laurentiuro/cni-plugins/pkg/utils"
 	"net"
 )
 
@@ -27,6 +27,8 @@ type Plugin struct {
 	preRoutingRawChainName  string
 	filterTableName         string
 	forwardFilterChainName  string
+	sourceIP4				string
+	sourceIP6				string
 	interfaceChain          []string
 	targetInterfaces        map[string]*Interface
 	targetIPVersions        map[string]bool
@@ -47,6 +49,8 @@ func NewPlugin(conf *Config) *Plugin {
 		preRoutingRawChainName:  conf.PreRoutingRawChainName,
 		filterTableName:         conf.FilterTableName,
 		forwardFilterChainName:  conf.ForwardFilterChainName,
+		sourceIP4:				 conf.SourceIP4,
+		sourceIP6:				 conf.SourceIP6,
 		targetIPVersions:        make(map[string]bool),
 		interfaceChain:          []string{},
 	}
@@ -262,6 +266,18 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 				)
 			}
 
+
+			var srcAddr net.IPNet
+			if addr.Version == "4" {
+				if len(conf.SourceIP4) > 0{
+					srcAddr.IP = net.ParseIP(conf.SourceIP4)
+				}
+			} else {
+				if len(conf.SourceIP6) > 0{
+					srcAddr.IP = net.ParseIP(conf.SourceIP6)
+				}
+			}
+
 			var destAddr net.IPNet
 			if addr.Version == "4" {
 				destAddr = conf.ContIPv4
@@ -276,7 +292,8 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 						"table":            p.natTableName,
 						"chain":            chainName,
 						"bridge_interface": bridgeIntfName,
-						"ip_address":       destAddr,
+						"saddr":            srcAddr,
+						"daddr":            destAddr,
 						"port_mapping":     pm,
 					},
 				); err != nil {
@@ -313,7 +330,8 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 						"table":            p.filterTableName,
 						"chain":            p.forwardFilterChainName,
 						"bridge_interface": bridgeIntfName,
-						"ip_address":       destAddr,
+						"saddr":            srcAddr,
+						"daddr":            destAddr,
 						"port_mapping":     pm,
 					},
 				); err != nil {
@@ -322,7 +340,6 @@ func (p *Plugin) execAdd(conf *Config, prevResult *current.Result) error {
 						addr.Version, p.forwardFilterChainName, p.filterTableName, pm, err,
 					)
 				}
-
 			}
 
 		}
@@ -534,7 +551,7 @@ func (p *Plugin) execDelete(conf *Config, prevResult *current.Result) error {
 						"table":            p.filterTableName,
 						"chain":            p.forwardFilterChainName,
 						"bridge_interface": bridgeIntfName,
-						"ip_address":       destAddr,
+						"daddr":            destAddr,
 						"port_mapping":     pm,
 					},
 				); err != nil {

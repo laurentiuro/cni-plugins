@@ -6,7 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/containernetworking/cni/pkg/skel"
-	"github.com/greenpau/cni-plugins/pkg/portmap"
+	"github.com/laurentiuro/cni-plugins/pkg/portmap"
 	"github.com/greenpau/versioned"
 	"os"
 )

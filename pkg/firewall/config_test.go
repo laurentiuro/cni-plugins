@@ -1,7 +1,7 @@
 package firewall
 
 import (
-	"github.com/greenpau/cni-plugins/pkg/utils"
+	"github.com/laurentiu/cni-plugins/pkg/utils"
 	"testing"
 )
 
