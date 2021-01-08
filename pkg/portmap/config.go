@@ -3,7 +3,7 @@ package portmap
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+//	"log"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/040"
 	"github.com/containernetworking/cni/pkg/version"
@@ -161,7 +161,7 @@ func parseConfigFromBytes(data []byte, intfName string) (*Config, *current.Resul
 		}
 	}
 
-	log.Printf("\n\nportmap:\n\nconf = %v", conf)
+//	log.Printf("\n\nportmap:\n\nconf = %v", conf)
 
 	return conf, result, nil
 }

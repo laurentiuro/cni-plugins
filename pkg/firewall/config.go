@@ -3,7 +3,7 @@ package firewall
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+//	"log"
 	"github.com/containernetworking/cni/pkg/types"
 	current "github.com/containernetworking/cni/pkg/types/040"
 	"github.com/containernetworking/cni/pkg/version"
@@ -68,7 +68,7 @@ func parseConfigFromBytes(data []byte) (*Config, *current.Result, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not convert result to current version: %v", err)
 	}
-	log.Printf("\n\nfirewall:\n\nconf = %v", conf)
+//	log.Printf("\n\nfirewall:\n\nconf = %v", conf)
 
 	return conf, result, nil
 }
